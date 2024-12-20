@@ -1,0 +1,41 @@
+plugins {
+    id("java")
+    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("application")
+}
+
+group = "org.example"
+version = "1.0-SNAPSHOT"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation(platform("org.junit:junit-bom:5.10.0"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    implementation 'org.xerial:sqlite-jdbc:3.43.2.1'
+    implementation 'org.slf4j:slf4j-simple:2.0.9'
+
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+
+tasks.jar {
+    enabled = false
+}
+
+tasks.shadowJar {
+    manifest {
+        attributes(
+                'Main-Class': 'org.example.PasswordManagerApp'
+        )
+    }
+}
+
+application {
+    mainClass.set("org.example.PasswordManagerApp")
+}
+

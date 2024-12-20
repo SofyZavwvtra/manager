@@ -1,0 +1,101 @@
+<html>
+<head>
+<title>DatabaseManager.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #2aacb8;}
+.s5 { color: #7a7e85;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+DatabaseManager.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">org</span><span class="s2">.</span><span class="s1">example</span><span class="s2">;</span>
+
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">security</span><span class="s2">.</span><span class="s1">NoSuchAlgorithmException</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">security</span><span class="s2">.</span><span class="s1">SecureRandom</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">sql</span><span class="s2">.*;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">util</span><span class="s2">.</span><span class="s1">Base64</span><span class="s2">;</span>
+
+<span class="s0">public class </span><span class="s1">DatabaseManager </span><span class="s0">implements </span><span class="s1">AutoCloseable</span><span class="s2">{</span>
+    <span class="s0">private </span><span class="s1">Connection connection</span><span class="s2">;</span>
+    <span class="s0">private static final </span><span class="s1">String DB_URL </span><span class="s2">= </span><span class="s3">&quot;jdbc:sqlite:passwords.db&quot;</span><span class="s2">;</span>
+
+    <span class="s0">public </span><span class="s1">DatabaseManager</span><span class="s2">() </span><span class="s0">throws </span><span class="s1">SQLException </span><span class="s2">{</span>
+        <span class="s1">connection </span><span class="s2">= </span><span class="s1">DriverManager</span><span class="s2">.</span><span class="s1">getConnection</span><span class="s2">(</span><span class="s1">DB_URL</span><span class="s2">);</span>
+        <span class="s1">createTable</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s0">private void </span><span class="s1">createTable</span><span class="s2">() </span><span class="s0">throws </span><span class="s1">SQLException </span><span class="s2">{</span>
+        <span class="s0">try </span><span class="s2">(</span><span class="s1">Statement stmt </span><span class="s2">= </span><span class="s1">connection</span><span class="s2">.</span><span class="s1">createStatement</span><span class="s2">()) {</span>
+            <span class="s1">stmt</span><span class="s2">.</span><span class="s1">execute</span><span class="s2">(</span><span class="s3">&quot;CREATE TABLE IF NOT EXISTS passwords (&quot; </span><span class="s2">+</span>
+                    <span class="s3">&quot;id INTEGER PRIMARY KEY AUTOINCREMENT,&quot; </span><span class="s2">+</span>
+                    <span class="s3">&quot;login TEXT UNIQUE NOT NULL,&quot; </span><span class="s2">+</span>
+                    <span class="s3">&quot;password TEXT,&quot; </span><span class="s2">+</span>
+                    <span class="s3">&quot;salt TEXT,&quot; </span><span class="s2">+</span>
+                    <span class="s3">&quot;encrypted INTEGER NOT NULL,&quot; </span><span class="s2">+</span>
+                    <span class="s3">&quot;encryption_method TEXT&quot; </span><span class="s2">+</span>
+                    <span class="s3">&quot;);&quot;</span><span class="s2">);</span>
+        <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public boolean </span><span class="s1">addUser</span><span class="s2">(</span><span class="s1">String login</span><span class="s2">, </span><span class="s1">String password</span><span class="s2">, </span><span class="s0">int </span><span class="s1">encrypted</span><span class="s2">, </span><span class="s1">String encryptionMethod</span><span class="s2">, </span><span class="s1">String salt</span><span class="s2">) </span><span class="s0">throws </span><span class="s1">SQLException</span><span class="s2">, </span><span class="s1">NoSuchAlgorithmException </span><span class="s2">{</span>
+        <span class="s0">try </span><span class="s2">(</span><span class="s1">PreparedStatement pstmt </span><span class="s2">= </span><span class="s1">connection</span><span class="s2">.</span><span class="s1">prepareStatement</span><span class="s2">(</span><span class="s3">&quot;INSERT INTO passwords (login, password, salt, encrypted, encryption_method) VALUES (?, ?, ?, ?, ?)&quot;</span><span class="s2">)) {</span>
+            <span class="s1">pstmt</span><span class="s2">.</span><span class="s1">setString</span><span class="s2">(</span><span class="s4">1</span><span class="s2">, </span><span class="s1">login</span><span class="s2">);</span>
+            <span class="s1">pstmt</span><span class="s2">.</span><span class="s1">setString</span><span class="s2">(</span><span class="s4">2</span><span class="s2">, </span><span class="s1">password</span><span class="s2">);</span>
+            <span class="s1">pstmt</span><span class="s2">.</span><span class="s1">setString</span><span class="s2">(</span><span class="s4">3</span><span class="s2">, </span><span class="s1">salt</span><span class="s2">);</span>
+            <span class="s1">pstmt</span><span class="s2">.</span><span class="s1">setInt</span><span class="s2">(</span><span class="s4">4</span><span class="s2">, </span><span class="s1">encrypted</span><span class="s2">);</span>
+            <span class="s1">pstmt</span><span class="s2">.</span><span class="s1">setString</span><span class="s2">(</span><span class="s4">5</span><span class="s2">, </span><span class="s1">encryptionMethod</span><span class="s2">);</span>
+            <span class="s0">return </span><span class="s1">pstmt</span><span class="s2">.</span><span class="s1">executeUpdate</span><span class="s2">() &gt; </span><span class="s4">0</span><span class="s2">;</span>
+        <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public boolean </span><span class="s1">checkUser</span><span class="s2">(</span><span class="s1">String login</span><span class="s2">, </span><span class="s1">String password</span><span class="s2">) </span><span class="s0">throws </span><span class="s1">SQLException</span><span class="s2">, </span><span class="s1">NoSuchAlgorithmException </span><span class="s2">{</span>
+        <span class="s0">try </span><span class="s2">(</span><span class="s1">PreparedStatement pstmt </span><span class="s2">= </span><span class="s1">connection</span><span class="s2">.</span><span class="s1">prepareStatement</span><span class="s2">(</span><span class="s3">&quot;SELECT password, salt, encrypted, encryption_method FROM passwords WHERE login = ?&quot;</span><span class="s2">)) {</span>
+            <span class="s1">pstmt</span><span class="s2">.</span><span class="s1">setString</span><span class="s2">(</span><span class="s4">1</span><span class="s2">, </span><span class="s1">login</span><span class="s2">);</span>
+            <span class="s0">try </span><span class="s2">(</span><span class="s1">ResultSet rs </span><span class="s2">= </span><span class="s1">pstmt</span><span class="s2">.</span><span class="s1">executeQuery</span><span class="s2">()) {</span>
+                <span class="s0">if </span><span class="s2">(</span><span class="s1">rs</span><span class="s2">.</span><span class="s1">next</span><span class="s2">()) {</span>
+                    <span class="s0">return </span><span class="s1">PasswordEncryptor</span><span class="s2">.</span><span class="s1">checkPassword</span><span class="s2">(</span><span class="s1">password</span><span class="s2">, </span><span class="s1">rs</span><span class="s2">.</span><span class="s1">getString</span><span class="s2">(</span><span class="s3">&quot;password&quot;</span><span class="s2">), </span><span class="s1">rs</span><span class="s2">.</span><span class="s1">getString</span><span class="s2">(</span><span class="s3">&quot;salt&quot;</span><span class="s2">), </span><span class="s1">rs</span><span class="s2">.</span><span class="s1">getInt</span><span class="s2">(</span><span class="s3">&quot;encrypted&quot;</span><span class="s2">), </span><span class="s1">rs</span><span class="s2">.</span><span class="s1">getString</span><span class="s2">(</span><span class="s3">&quot;encryption_method&quot;</span><span class="s2">));</span>
+                <span class="s2">}</span>
+            <span class="s2">}</span>
+        <span class="s2">}</span>
+        <span class="s0">return false</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public boolean </span><span class="s1">editPassword</span><span class="s2">(</span><span class="s1">String login</span><span class="s2">, </span><span class="s1">String newPassword</span><span class="s2">, </span><span class="s0">int </span><span class="s1">encrypted</span><span class="s2">, </span><span class="s1">String encryptionMethod</span><span class="s2">, </span><span class="s1">String salt</span><span class="s2">) </span><span class="s0">throws </span><span class="s1">SQLException</span><span class="s2">, </span><span class="s1">NoSuchAlgorithmException </span><span class="s2">{</span>
+        <span class="s0">try </span><span class="s2">(</span><span class="s1">PreparedStatement pstmt </span><span class="s2">= </span><span class="s1">connection</span><span class="s2">.</span><span class="s1">prepareStatement</span><span class="s2">(</span><span class="s3">&quot;UPDATE passwords SET password = ?, salt = ?, encrypted = ?, encryption_method = ? WHERE login = ?&quot;</span><span class="s2">)) {</span>
+            <span class="s1">pstmt</span><span class="s2">.</span><span class="s1">setString</span><span class="s2">(</span><span class="s4">1</span><span class="s2">, </span><span class="s1">newPassword</span><span class="s2">);</span>
+            <span class="s1">pstmt</span><span class="s2">.</span><span class="s1">setString</span><span class="s2">(</span><span class="s4">2</span><span class="s2">, </span><span class="s1">salt</span><span class="s2">);</span>
+            <span class="s1">pstmt</span><span class="s2">.</span><span class="s1">setInt</span><span class="s2">(</span><span class="s4">3</span><span class="s2">, </span><span class="s1">encrypted</span><span class="s2">);</span>
+            <span class="s1">pstmt</span><span class="s2">.</span><span class="s1">setString</span><span class="s2">(</span><span class="s4">4</span><span class="s2">, </span><span class="s1">encryptionMethod</span><span class="s2">);</span>
+            <span class="s1">pstmt</span><span class="s2">.</span><span class="s1">setString</span><span class="s2">(</span><span class="s4">5</span><span class="s2">, </span><span class="s1">login</span><span class="s2">);</span>
+            <span class="s0">return </span><span class="s1">pstmt</span><span class="s2">.</span><span class="s1">executeUpdate</span><span class="s2">() &gt; </span><span class="s4">0</span><span class="s2">;</span>
+        <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public boolean </span><span class="s1">deletePassword</span><span class="s2">(</span><span class="s1">String login</span><span class="s2">) </span><span class="s0">throws </span><span class="s1">SQLException </span><span class="s2">{</span>
+        <span class="s0">try </span><span class="s2">(</span><span class="s1">PreparedStatement pstmt </span><span class="s2">= </span><span class="s1">connection</span><span class="s2">.</span><span class="s1">prepareStatement</span><span class="s2">(</span><span class="s3">&quot;DELETE FROM passwords WHERE login = ?&quot;</span><span class="s2">)) {</span>
+            <span class="s1">pstmt</span><span class="s2">.</span><span class="s1">setString</span><span class="s2">(</span><span class="s4">1</span><span class="s2">, </span><span class="s1">login</span><span class="s2">);</span>
+            <span class="s0">return </span><span class="s1">pstmt</span><span class="s2">.</span><span class="s1">executeUpdate</span><span class="s2">() &gt; </span><span class="s4">0</span><span class="s2">;</span>
+        <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public void </span><span class="s1">close</span><span class="s2">() </span><span class="s0">throws </span><span class="s1">SQLException </span><span class="s2">{</span>
+        <span class="s1">connection</span><span class="s2">.</span><span class="s1">close</span><span class="s2">();</span>
+    <span class="s2">}</span>
+    <span class="s5">// Добавлен для доступа из UserManager</span>
+    <span class="s0">public </span><span class="s1">Connection getConnection</span><span class="s2">(){</span>
+        <span class="s0">return </span><span class="s1">connection</span><span class="s2">;</span>
+    <span class="s2">}</span>
+<span class="s2">}</span>
+
+</pre>
+</body>
+</html>
