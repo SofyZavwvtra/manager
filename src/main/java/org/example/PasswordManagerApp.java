@@ -15,7 +15,7 @@ public class PasswordManagerApp {
 
     public void run(){
         dbManager.createTables();
-        Scanner scanner=new Scanner(System.in, StandardCharsets.UTF_8);
+        Scanner scanner=new Scanner(System.in);
 
         while(true){
             System.out.println("1. Регистрация");
@@ -25,9 +25,7 @@ public class PasswordManagerApp {
             int choice;
             try {
 
-            if(scanner.hasNextInt()){
-
-                choice=scanner.nextInt();
+            choice = scanner.nextInt();
                 scanner.nextLine();
 
                 if(choice==1){
@@ -41,7 +39,6 @@ public class PasswordManagerApp {
                 } else{
                     System.out.println("Неверный выбор.");
                 }
-            }
             } catch (Exception e) {
                 System.out.println("Пожалуйста, введите цифру!");
                 scanner.next(); // Очистка некорректного ввода
